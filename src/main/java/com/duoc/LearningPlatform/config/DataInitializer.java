@@ -26,6 +26,12 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        // Si ya hay datos, no reinsertar (evita duplicados con base de datos persistente como Oracle)
+        if (userRepository.count() > 0) {
+            System.out.println(">>> DataInitializer: datos ya existentes, se omite la carga inicial.");
+            return;
+        }
+
         // Docente de ejemplo
         User teacher = new User("María González", "mgonzalez@duoc.cl", "secret123", Role.TEACHER);
         teacher = userRepository.save(teacher);
