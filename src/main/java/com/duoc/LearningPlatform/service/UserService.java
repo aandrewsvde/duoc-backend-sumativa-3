@@ -1,18 +1,20 @@
 package com.duoc.LearningPlatform.service;
 
-import com.duoc.LearningPlatform.model.User;
+import com.duoc.LearningPlatform.model.dto.UserRequestDTO;
+import com.duoc.LearningPlatform.model.dto.UserResponseDTO;
+import com.duoc.LearningPlatform.model.dto.UserUpdateDTO;
 
 import java.util.List;
 
 public interface UserService {
 
-    List<User> getAll();
+    List<UserResponseDTO> getAll();
 
-    User getById(Long id);
+    UserResponseDTO getById(Long id);
 
-    User create(User user);
+    UserResponseDTO create(UserRequestDTO dto);
 
-    User update(Long id, User user);
+    UserResponseDTO update(Long id, UserUpdateDTO dto);
 
     void delete(Long id);
 }

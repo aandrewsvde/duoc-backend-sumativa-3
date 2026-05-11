@@ -6,10 +6,11 @@ import com.duoc.LearningPlatform.model.enums.Role;
 import com.duoc.LearningPlatform.repository.CourseRepository;
 import com.duoc.LearningPlatform.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
- * Carga datos de muestra en la base de datos H2 al iniciar la aplicación.
+ * Carga datos de muestra en la base de datos al iniciar la aplicación.
  * Garantiza que haya cursos disponibles para consultar el catálogo activo.
  */
 @Component
@@ -17,11 +18,14 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserRepository userRepository,
-                           CourseRepository courseRepository) {
-        this.userRepository = userRepository;
+                           CourseRepository courseRepository,
+                           PasswordEncoder passwordEncoder) {
+        this.userRepository  = userRepository;
         this.courseRepository = courseRepository;
+        this.passwordEncoder  = passwordEncoder;
     }
 
     @Override
@@ -32,8 +36,9 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
-        // Docente de ejemplo
-        User teacher = new User("María González", "mgonzalez@duoc.cl", "secret123", Role.TEACHER);
+        // Docente de ejemplo — contraseña almacenada con hash BCrypt
+        User teacher = new User("María González", "mgonzalez@duoc.cl",
+                passwordEncoder.encode("secret123"), Role.TEACHER);
         teacher = userRepository.save(teacher);
 
         // Cursos activos — títulos desordenados a propósito para mostrar el sort

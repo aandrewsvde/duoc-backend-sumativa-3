@@ -1,7 +1,7 @@
 package com.duoc.LearningPlatform.model;
 
 import jakarta.persistence.*;
-import java.util.Date;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "grades")
@@ -22,8 +22,7 @@ public class Grade {
     private int maxScore;
 
     @Column(nullable = false)
-    @Temporal(TemporalType.DATE)
-    private Date applicationDate;
+    private LocalDate applicationDate;
 
     public Grade() {}
 
@@ -39,6 +38,6 @@ public class Grade {
     public int getMaxScore() { return maxScore; }
     public void setMaxScore(int maxScore) { this.maxScore = maxScore; }
 
-    public Date getApplicationDate() { return applicationDate; }
-    public void setApplicationDate(Date applicationDate) { this.applicationDate = applicationDate; }
+    public LocalDate getApplicationDate() { return applicationDate; }
+    public void setApplicationDate(LocalDate applicationDate) { this.applicationDate = applicationDate; }
 }

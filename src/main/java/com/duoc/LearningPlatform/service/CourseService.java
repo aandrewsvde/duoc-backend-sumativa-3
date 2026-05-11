@@ -1,28 +1,30 @@
 package com.duoc.LearningPlatform.service;
 
-import com.duoc.LearningPlatform.model.Course;
 import com.duoc.LearningPlatform.model.Enrollment;
-import com.duoc.LearningPlatform.model.User;
 import com.duoc.LearningPlatform.model.dto.CourseCatalogDTO;
+import com.duoc.LearningPlatform.model.dto.CourseRequestDTO;
+import com.duoc.LearningPlatform.model.dto.CourseResponseDTO;
+import com.duoc.LearningPlatform.model.dto.CourseUpdateDTO;
+import com.duoc.LearningPlatform.model.dto.UserResponseDTO;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface CourseService {
 
-    List<Course> findAll();
+    List<CourseResponseDTO> findAll();
 
-    Optional<Course> findById(Long id);
+    Optional<CourseResponseDTO> findById(Long id);
 
-    Course create(Course course);
+    CourseResponseDTO create(CourseRequestDTO dto);
 
-    Course update(Long id, Course course);
+    CourseResponseDTO update(Long id, CourseUpdateDTO dto);
 
     void delete(Long id);
 
     Enrollment enroll(Long studentId, Long courseId);
 
-    List<User> getStudentsByCourse(Long courseId);
+    List<UserResponseDTO> getStudentsByCourse(Long courseId);
 
     /**
      * Retorna los cursos activos ordenados: primero por título (A-Z),

@@ -1,16 +1,20 @@
 package com.duoc.LearningPlatform.service;
 
-import com.duoc.LearningPlatform.model.Grade;
+import com.duoc.LearningPlatform.model.dto.GradeRequestDTO;
+import com.duoc.LearningPlatform.model.dto.GradeResponseDTO;
+import com.duoc.LearningPlatform.model.dto.GradeUpdateDTO;
 
 import java.util.List;
 
 public interface GradeService {
 
-    List<Grade> getAll();
+    List<GradeResponseDTO> getAll();
 
-    List<Grade> getByCourseId(Long courseId);
+    List<GradeResponseDTO> getByCourseId(Long courseId);
 
-    Grade create(Grade grade, Long courseId);
+    GradeResponseDTO create(GradeRequestDTO dto);
 
-    Grade update(Long id, Grade grade);
+    GradeResponseDTO update(Long id, GradeUpdateDTO dto);
+
+    void delete(Long id);
 }

@@ -5,6 +5,10 @@ import com.duoc.LearningPlatform.model.Course;
 import com.duoc.LearningPlatform.model.Enrollment;
 import com.duoc.LearningPlatform.model.User;
 import com.duoc.LearningPlatform.model.dto.CourseCatalogDTO;
+import com.duoc.LearningPlatform.model.dto.CourseRequestDTO;
+import com.duoc.LearningPlatform.model.dto.CourseResponseDTO;
+import com.duoc.LearningPlatform.model.dto.CourseUpdateDTO;
+import com.duoc.LearningPlatform.model.dto.UserResponseDTO;
 import com.duoc.LearningPlatform.repository.CourseRepository;
 import com.duoc.LearningPlatform.repository.EnrollmentRepository;
 import com.duoc.LearningPlatform.repository.UserRepository;
@@ -34,6 +38,7 @@ public class CourseServiceImpl implements CourseService {
      * Se inicializa de forma perezosa (lazy) en la primera consulta al catálogo.
      */
     private final Map<Long, CourseCatalogDTO> courseCatalog = new HashMap<>();
+    private boolean catalogLoaded = false;
 
     public CourseServiceImpl(CourseRepository courseRepository,
                              UserRepository userRepository,
@@ -51,7 +56,7 @@ public class CourseServiceImpl implements CourseService {
     @Transactional(readOnly = true)
     public List<CourseCatalogDTO> getActiveCoursesSorted() {
         // Inicialización perezosa: carga el catálogo desde la BD la primera vez
-        if (courseCatalog.isEmpty()) {
+        if (!catalogLoaded) {
             refreshCatalog();
         }
 
@@ -76,11 +81,12 @@ public class CourseServiceImpl implements CourseService {
     private void refreshCatalog() {
         courseCatalog.clear();
         courseRepository.findAllActiveWithTeacher()
-                        .forEach(course -> courseCatalog.put(course.getId(), toDTO(course)));
+                        .forEach(course -> courseCatalog.put(course.getId(), toCatalogDTO(course)));
+        catalogLoaded = true;
     }
 
     /** Convierte una entidad Course a su DTO de catálogo. */
-    private CourseCatalogDTO toDTO(Course course) {
+    private CourseCatalogDTO toCatalogDTO(Course course) {
         String teacherName = (course.getTeacher() != null)
                 ? course.getTeacher().getName()
                 : "Sin docente asignado";
@@ -93,47 +99,64 @@ public class CourseServiceImpl implements CourseService {
         );
     }
 
+    /** Convierte una entidad Course a CourseResponseDTO. */
+    private CourseResponseDTO toCourseResponseDTO(Course course) {
+        return new CourseResponseDTO(course);
+    }
+
     // -------------------------------------------------------------------------
     // CRUD DE CURSOS (mantiene el catálogo sincronizado)
     // -------------------------------------------------------------------------
 
     @Override
     @Transactional(readOnly = true)
-    public List<Course> findAll() {
-        return courseRepository.findAll();
+    public List<CourseResponseDTO> findAll() {
+        return courseRepository.findAll().stream()
+                .map(this::toCourseResponseDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Course> findById(Long id) {
-        return courseRepository.findById(id);
+    public Optional<CourseResponseDTO> findById(Long id) {
+        return courseRepository.findById(id).map(this::toCourseResponseDTO);
     }
 
     @Override
-    public Course create(Course course) {
+    public CourseResponseDTO create(CourseRequestDTO dto) {
+        User teacher = userRepository.findById(dto.getTeacherId())
+                .orElseThrow(() -> new ResourceNotFoundException("Docente no encontrado con id: " + dto.getTeacherId()));
+        Course course = new Course();
+        course.setTitle(dto.getTitle());
+        course.setDescription(dto.getDescription());
+        course.setTeacher(teacher);
+        course.setActive(dto.isActive());
         Course saved = courseRepository.save(course);
         if (saved.isActive()) {
-            courseCatalog.put(saved.getId(), toDTO(saved));
+            courseCatalog.put(saved.getId(), toCatalogDTO(saved));
         }
-        return saved;
+        return toCourseResponseDTO(saved);
     }
 
     @Override
-    public Course update(Long id, Course course) {
+    public CourseResponseDTO update(Long id, CourseUpdateDTO dto) {
         Course existing = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Curso no encontrado con id: " + id));
-        existing.setTitle(course.getTitle());
-        existing.setDescription(course.getDescription());
-        existing.setActive(course.isActive());
+        if (dto.getTitle() != null && !dto.getTitle().isBlank()) existing.setTitle(dto.getTitle());
+        if (dto.getDescription() != null) existing.setDescription(dto.getDescription());
+        if (dto.getActive() != null) existing.setActive(dto.getActive());
+        if (dto.getTeacherId() != null) {
+            User teacher = userRepository.findById(dto.getTeacherId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Docente no encontrado con id: " + dto.getTeacherId()));
+            existing.setTeacher(teacher);
+        }
         Course saved = courseRepository.save(existing);
-
-        // Sincronizar catálogo en memoria
         if (saved.isActive()) {
-            courseCatalog.put(saved.getId(), toDTO(saved));
+            courseCatalog.put(saved.getId(), toCatalogDTO(saved));
         } else {
             courseCatalog.remove(saved.getId());
         }
-        return saved;
+        return toCourseResponseDTO(saved);
     }
 
     @Override
@@ -155,6 +178,9 @@ public class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Estudiante no encontrado con id: " + studentId));
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Curso no encontrado con id: " + courseId));
+        if (enrollmentRepository.existsByStudentAndCourse(student, course)) {
+            throw new IllegalArgumentException("El estudiante ya está inscrito en este curso");
+        }
         Enrollment enrollment = new Enrollment();
         enrollment.setStudent(student);
         enrollment.setCourse(course);
@@ -163,12 +189,12 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<User> getStudentsByCourse(Long courseId) {
+    public List<UserResponseDTO> getStudentsByCourse(Long courseId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Curso no encontrado con id: " + courseId));
         return enrollmentRepository.findByCourse(course)
                 .stream()
-                .map(Enrollment::getStudent)
+                .map(enrollment -> new UserResponseDTO(enrollment.getStudent()))
                 .collect(Collectors.toList());
     }
 }

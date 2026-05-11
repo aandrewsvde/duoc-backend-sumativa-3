@@ -1,10 +1,13 @@
 package com.duoc.LearningPlatform.controller;
 
-import com.duoc.LearningPlatform.model.Course;
 import com.duoc.LearningPlatform.model.Enrollment;
-import com.duoc.LearningPlatform.model.User;
 import com.duoc.LearningPlatform.model.dto.CourseCatalogDTO;
+import com.duoc.LearningPlatform.model.dto.CourseRequestDTO;
+import com.duoc.LearningPlatform.model.dto.CourseResponseDTO;
+import com.duoc.LearningPlatform.model.dto.CourseUpdateDTO;
+import com.duoc.LearningPlatform.model.dto.UserResponseDTO;
 import com.duoc.LearningPlatform.service.CourseService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +26,7 @@ public class CourseController {
     }
 
     /**
-     * GET /api/courses/active
+     * GET /api/cursos/active
      * Devuelve la lista de cursos activos disponibles para estudiantes,
      * ordenados por título (A-Z) y luego por fecha de creación (más reciente primero).
      */
@@ -33,25 +36,26 @@ public class CourseController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Course>> findAll() {
+    public ResponseEntity<List<CourseResponseDTO>> findAll() {
         return ResponseEntity.ok(courseService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Course> findById(@PathVariable Long id) {
+    public ResponseEntity<CourseResponseDTO> findById(@PathVariable Long id) {
         return courseService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Course> create(@RequestBody Course course) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(courseService.create(course));
+    public ResponseEntity<CourseResponseDTO> create(@Valid @RequestBody CourseRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(courseService.create(dto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Course> update(@PathVariable Long id, @RequestBody Course course) {
-        return ResponseEntity.ok(courseService.update(id, course));
+    public ResponseEntity<CourseResponseDTO> update(@PathVariable Long id,
+                                                    @Valid @RequestBody CourseUpdateDTO dto) {
+        return ResponseEntity.ok(courseService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
@@ -68,7 +72,7 @@ public class CourseController {
     }
 
     @GetMapping("/{courseId}/students")
-    public ResponseEntity<List<User>> getStudents(@PathVariable Long courseId) {
+    public ResponseEntity<List<UserResponseDTO>> getStudents(@PathVariable Long courseId) {
         return ResponseEntity.ok(courseService.getStudentsByCourse(courseId));
     }
 }
